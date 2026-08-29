@@ -69,6 +69,9 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+  
+  dependency_overrides:
+  json_annotation: 4.9.0
   #
   # For details regarding fonts in packages, see
   # https://flutter.dev/to/font-from-package
