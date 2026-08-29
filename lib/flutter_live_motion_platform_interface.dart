@@ -52,4 +52,11 @@ abstract class FlutterLiveMotionPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError('export() has not been implemented.');
   }
+
+  /// 【新增：华为动态照片提取】
+  ///
+  /// 从选中的华为动态照片（单文件 .jpg）中提取内嵌视频片段。
+  Future<Map<dynamic, dynamic>?> extractVideo({required String imagePath}) {
+    throw UnimplementedError('extractVideo() has not been implemented.');
+  }
 }
