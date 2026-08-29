@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -17,8 +18,10 @@ jobs:
       - name: Download Flutter 3.27.0
         run: git clone --depth 1 --branch 3.27.0 https://github.com/flutter/flutter.git ~/flutter
 
-      - name: Install dependencies
-        run: ~/flutter/bin/flutter pub get
+      - name: Install dependencies（临时隐藏example文件夹，避免版本报错）
+        run: |
+          mv example example_temp
+          ~/flutter/bin/flutter pub get
 
       - name: Build Release APK
         run: ~/flutter/bin/flutter build apk --release
