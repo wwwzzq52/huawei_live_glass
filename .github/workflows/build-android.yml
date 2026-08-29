@@ -14,16 +14,15 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # 官方下载 Flutter 3.27.0
-      - name: Download Flutter
-        run: |
-          git clone --depth 1 --branch 3.27.0 https://github.com/flutter/flutter.git ~/flutter
-          echo "PATH=$HOME/flutter/bin:$PATH" >> $GITHUB_PATH
+      - name: Download Flutter 3.27.0
+        run: git clone --depth 1 --branch 3.27.0 https://github.com/flutter/flutter.git ~/flutter
 
       - name: Install dependencies
-        run: flutter pub get
+        run: ~/flutter/bin/flutter pub get
+
       - name: Build Release APK
-        run: flutter build apk --release
+        run: ~/flutter/bin/flutter build apk --release
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
