@@ -28,7 +28,6 @@ import 'package:flutter_live_motion/flutter_live_motion.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_manager/photo_manager.dart';
 
 import 'media_pair_resolver.dart';
 
@@ -44,7 +43,6 @@ class HuaweiLiveGlassApp extends StatelessWidget {
     return MaterialApp(
       title: '华为动态照片 · 液态玻璃水印',
       debugShowCheckedModeBanner: false,
-      navigatorKey: mediaPairResolverNavigatorKey,
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF101018),
@@ -365,40 +363,26 @@ class _EditorPageState extends State<EditorPage> {
   Future<void> _pickImage() async {
     try {
       // 【修改点 A：photo_manager 精确识别华为动态照片】
-      // 优先用 MediaPairResolver.pickHuaweiImage()：
-      //   通过系统相册选择图片 → 从 MediaStore 解析原始相对目录 → 查同名 mp4。
-      // 该方法内部会申请权限；失败或用户取消时回退到 image_picker。
+      // 用 image_picker 选图 → MediaPairResolver 在 MediaStore 反查原始相对目录
+      // → 查“同目录同名 mp4”。用户取消返回 null。
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
       HuaweiMediaPair? pair;
       try {
-        pair = await MediaPairResolver.pickHuaweiImage();
+        pair = await MediaPairResolver.resolvePairFromPickedFile(image);
       } catch (_) {
         pair = null;
       }
 
-      if (pair != null) {
-        setState(() {
-          _imagePath = pair.imagePath;
-          _videoPath = pair.videoPath ?? _videoPath;
-          _detectedHuaweiPair = pair.hasMotionVideo;
-          _status = pair.hasMotionVideo
-              ? '✅ 识别华为动态照片，自动关联 ${pair.videoPath!.split('/').last}'
-              : '已选图片 ${pair.imagePath.split('/').last}';
-        });
-        await _rebuildPreview();
-        return;
-      }
-
-      // 回退：image_picker + 本地路径探测
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image == null) return;
-      final autoVideo = await _findPairVideo(image.path);
+      final videoPath = pair?.videoPath ?? await _findPairVideo(image.path);
 
       setState(() {
-        _imagePath = image.path;
-        _videoPath = autoVideo ?? _videoPath;
-        _detectedHuaweiPair = autoVideo != null;
-        _status = autoVideo != null
-            ? '✅ 识别华为动态照片，自动关联 ${autoVideo.split('/').last}'
+        _imagePath = pair?.imagePath ?? image.path;
+        _videoPath = videoPath ?? _videoPath;
+        _detectedHuaweiPair = videoPath != null;
+        _status = videoPath != null
+            ? '✅ 识别华为动态照片，自动关联 ${videoPath.split('/').last}'
             : '已选图片 ${image.path.split('/').last}';
       });
 
@@ -408,21 +392,17 @@ class _EditorPageState extends State<EditorPage> {
     }
   }
 
-  /// 【修改点 A】同目录同名 mp4 识别（photo_manager 版）。
+  /// 【修改点 A】同目录同名 mp4 识别。
   ///
-  /// 优先用 photo_manager 打开系统相册并解析 MediaStore 中的原始相对目录，
-  /// 从而精确命中华为“同目录同名”的 IMG_xxx.mp4；失败时回退到 image_picker
-  /// 并做本地路径探测（仅适用于直接传入原始文件路径的场景）。
+  /// 先尝试本地路径同名探测（适用于直接传入原始文件路径的场景）；
+  /// image_picker 的缓存副本无法本地命中时，由 MediaPairResolver 在 MediaStore
+  /// 中反查原始目录同名 mp4。
   Future<String?> _findPairVideo(String imagePath) async {
     if (!Platform.isAndroid) return null;
 
-    // 回退：本地路径同名探测
     final local = await findLocalPairVideo(imagePath);
     if (local != null) return local;
 
-    // 已由 photo_manager 拿到 AssetEntity 的场景不经过这里；
-    // 此处只兜底 image_picker 的缓存副本：无法从缓存路径反查 MediaStore 原始目录，
-    // 返回 null 让调用方手动选视频。
     return null;
   }
 
