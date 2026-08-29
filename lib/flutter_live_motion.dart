@@ -19,13 +19,14 @@ class FlutterLiveMotion {
   /// 【修改点 B：导出入口】
   ///
   /// [mode] 可选值：
-  /// - `'standard'`  标准 Android MotionPhoto（视频嵌入图片内部）。
-  /// - `'huaweiPair'` 华为动态照片（图片 + 同名 mp4，华为图库可识别播放）。
-  /// - `'auto'`      自动：源为“同目录同名 .jpg/.mp4 配对”时保留华为格式，
-  ///                 否则输出标准 MotionPhoto。
+  /// - `'standard'` 标准 Android MotionPhoto（视频嵌入图片内部）。
+  /// - `'huawei'`   华为动态照片（单文件 .jpg：JPEG + MP4 + 40 字节尾标记）。
+  ///   旧值 `'huaweiPair'` / `'auto'` 会兼容为 `'huawei'`。
   ///
-  /// Android 返回 `Map`：`{ 'image': 输出图片路径, 'video': 输出视频路径(仅华为模式),
-  /// 'motionPhoto': 标准模式生成的单文件路径(仅标准模式) }`。
+  /// Android 返回 `Map`：
+  ///   `{ 'image': 输出图片路径,
+  ///      'motionPhoto': 单文件动态照片路径（两种模式均返回）,
+  ///      'video': 恒为 null }`。
   Future<Map<dynamic, dynamic>?> export({
     required String imagePath,
     required String videoPath,
