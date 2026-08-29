@@ -37,15 +37,14 @@ abstract class FlutterLiveMotionPlatform extends PlatformInterface {
     throw UnimplementedError('generate() has not been implemented.');
   }
 
-  /// 【修改点 B：扩展接口 — 导出格式开关 + 华为配对导出】
+  /// 【修改点 B：扩展接口 — 导出格式开关 + 华为单文件导出】
   ///
   /// [mode] 可选值：
   /// - `'standard'`：标准 Android MotionPhoto（视频嵌入 JPEG 尾部 + XMP），
   ///   与上游 flutter_live_motion 行为一致。
-  /// - `'huaweiPair'`：华为动态照片格式 — 输出“处理后的图片 + 同名 MP4”
-  ///   两个独立文件，华为图库通过同名文件配对识别播放。
-  /// - `'auto'`（默认）：如果 [videoPath] 与 [imagePath] 同目录同名（.mp4），
-  ///   说明源是华为配对式动态照片，保留 `'huaweiPair'`；否则走 `'standard'`。
+  /// - `'huawei'`（默认）：华为动态照片格式 — 输出单个 .jpg 文件
+  ///   （JPEG 图像段 + 内嵌 MP4 + 40 字节华为尾标记），华为图库可直接识别播放。
+  ///   旧值 `'huaweiPair'` / `'auto'` 兼容为 `'huawei'`。
   Future<Map<dynamic, dynamic>?> export({
     required String imagePath,
     required String videoPath,
