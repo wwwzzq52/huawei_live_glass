@@ -5,7 +5,7 @@ description: "Demonstrates how to use the flutter_live_motion plugin."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: ^3.9.2
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -28,7 +28,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  image_picker: ^1.2.0
+  image_picker: ^1.2.1
   # 【新增依赖】水印绘制与临时输出
   image: ^4.5.0
   path_provider: ^2.1.5
@@ -58,6 +58,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # 【液态玻璃】AGSL 运行时着色器（移植自 Kyant0/AndroidLiquidGlass）
+  shaders:
+    - shaders/liquid_glass.frag
 
   # To add assets to your application, add an assets section, like this:
   # assets:
