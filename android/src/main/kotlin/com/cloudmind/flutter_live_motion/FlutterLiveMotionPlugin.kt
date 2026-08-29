@@ -78,6 +78,24 @@ class FlutterLiveMotionPlugin :
             } catch (e: Exception) {
                 result.error("EXPORT_FAILED", e.message, null)
             }
+        } else if (call.method == "extractVideo") {
+            // 【新增】从华为单文件动态照片中提取内嵌视频
+            val imagePath = call.argument<String>("imagePath")
+            if (imagePath == null) {
+                result.error("INVALID_ARGUMENTS", "imagePath is required", null)
+                return
+            }
+            try {
+                val video = HuaweiMotionPhotoImporter.extractVideo(context, imagePath)
+                result.success(
+                    mapOf(
+                        "videoPath" to video,
+                        "isHuaweiMotionPhoto" to (video != null)
+                    )
+                )
+            } catch (e: Exception) {
+                result.error("EXTRACT_FAILED", e.message, null)
+            }
         } else if (call.method == "getPlatformVersion") {
             result.success("Android ${android.os.Build.VERSION.RELEASE}")
         } else {
