@@ -2,12 +2,9 @@
 // 【参考实现】华为动态照片 + 液态玻璃 + 水印 完整 Dart 应用
 // -----------------------------------------------------------------------------
 // 这是把两个开源项目能力合到一起的 Flutter 端参考代码：
-//   - 动态照片格式：aiglance/flutter_live_motion（已扩展华为配对导出，见本仓库 lib/ 与 android/）
-//   - 液态玻璃 UI：Kyant0/AndroidLiquidGlass 是 Compose Multiplatform 库，
-//     其 AGSL RuntimeShader 不能直接在 Flutter 中使用；Flutter 端用
-//     BackdropFilter(ImageFilter.blur) 实现等效的“液态玻璃”观感。
-//     （要 1:1 复用其 AGSL 着色器，需在 Android 原生层集成 Compose 或
-//       通过 PlatformView 嵌入，工程代价大，本参考按 Flutter 惯用方式等价实现。）
+//   - 动态照片格式：aiglance/flutter_live_motion（已扩展华为单文件导出，见本仓库 lib/ 与 android/）
+//   - 液态玻璃 UI：Kyant0/AndroidLiquidGlass（AGSL 折射着色器已移植为
+//     example/shaders/liquid_glass.frag，由 liquid_glass_painter.dart 加载渲染）
 //
 // 依赖（pubspec.yaml 追加）：
 //   dependencies:
@@ -20,7 +17,7 @@
 
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +26,7 @@ import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'liquid_glass_painter.dart';
 import 'media_pair_resolver.dart';
 
 void main() {
@@ -70,6 +68,7 @@ class _EditorPageState extends State<EditorPage> {
   String? _imagePath;
   String? _videoPath;
   Uint8List? _previewBytes;
+  ui.Image? _previewImage; // 解码后的完整图片，供液态玻璃着色器采样
 
   /// 【修改点 A】华为动态照片识别：选 jpg 时自动读同目录同名 mp4
   bool _detectedHuaweiPair = false;
@@ -128,41 +127,47 @@ class _EditorPageState extends State<EditorPage> {
 
   Widget _preview() {
     return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: SizedBox(
-          width: 320,
-          height: 320,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (_previewBytes != null)
-                Image.memory(_previewBytes!, fit: BoxFit.cover, gaplessPlayback: true)
-              else
-                const ColoredBox(color: Color(0xFF1B1B27)),
-              // 预览水印
-              if (_previewBytes != null)
-                Center(
-                  child: Transform.rotate(
-                    angle: _watermarkRotation * 3.1415926 / 180,
-                    child: Opacity(
-                      opacity: _watermarkOpacity,
-                      child: Text(
-                        _watermarkText,
-                        style: TextStyle(
-                          fontSize: _watermarkSize,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: const [
-                            Shadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 2)),
-                          ],
-                        ),
+      child: SizedBox(
+        width: 320,
+        height: 340,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 【液态玻璃渲染】用 AGSL 着色器对选中图片做圆角折射 + 色散
+            if (_previewImage != null)
+              CustomPaint(
+                painter: LiquidGlassPainter(
+                  content: _previewImage!,
+                  cornerRadius: 28,
+                ),
+              )
+            else
+              ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: const ColoredBox(color: Color(0xFF1B1B27)),
+              ),
+            // 预览水印
+            if (_previewImage != null)
+              Center(
+                child: Transform.rotate(
+                  angle: _watermarkRotation * 3.1415926 / 180,
+                  child: Opacity(
+                    opacity: _watermarkOpacity,
+                    child: Text(
+                      _watermarkText,
+                      style: TextStyle(
+                        fontSize: _watermarkSize,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 2)),
+                        ],
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -173,7 +178,7 @@ class _EditorPageState extends State<EditorPage> {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
-        filter: const ColorFilter.matrix(<double>[
+        filter: const ui.ColorFilter.matrix(<double>[
           1, 0, 0, 0, 0,
           0, 1, 0, 0, 0,
           0, 0, 1, 0, 0,
@@ -246,13 +251,13 @@ class _EditorPageState extends State<EditorPage> {
                     ? null
                     : (v) => setState(() {
                           _huaweiFormat = v;
-                          _status = v ? '导出模式：华为动态照片（图片+同名mp4）' : '导出模式：标准 MotionPhoto';
+                          _status = v ? '导出模式：华为动态照片（单文件 .jpg）' : '导出模式：标准 MotionPhoto';
                         }),
                 contentPadding: EdgeInsets.zero,
                 title: const Text('华为动态照片格式'),
                 subtitle: Text(
                   _huaweiFormat
-                      ? '输出处理后的图片 + 同名 mp4，华为图库可识别播放'
+                      ? '输出单个 .jpg 文件，内嵌视频片段，华为图库可直接识别播放'
                       : '输出标准 Android MotionPhoto（视频嵌入图片内部）',
                   style: const TextStyle(fontSize: 12),
                 ),
@@ -427,7 +432,14 @@ class _EditorPageState extends State<EditorPage> {
     if (_imagePath == null) return;
     try {
       final out = await _applyWatermark(File(_imagePath!), toJpeg: false);
-      setState(() => _previewBytes = out);
+      // 解码为 ui.Image 供液态玻璃着色器采样
+      final codec = await ui.instantiateImageCodec(out);
+      final frame = await codec.getNextFrame();
+      await LiquidGlassPainter.ensureLoaded();
+      setState(() {
+        _previewBytes = out;
+        _previewImage = frame.image;
+      });
     } catch (e) {
       setState(() => _status = '预览渲染失败: $e');
     }
@@ -473,7 +485,7 @@ class _EditorPageState extends State<EditorPage> {
   }
 
   // ===========================================================================
-  // 导出：先渲染水印图，再按开关选择华为配对 / 标准 MotionPhoto
+  // 导出：先渲染水印图，再按开关选择华为单文件 / 标准 MotionPhoto
   // ===========================================================================
   Future<void> _export() async {
     if (_imagePath == null || _videoPath == null) return;
@@ -489,7 +501,7 @@ class _EditorPageState extends State<EditorPage> {
       await processed.writeAsBytes(jpegBytes);
 
       // 【修改点 B】导出开关：开启 → 华为配对；关闭 → 标准 MotionPhoto
-      final mode = _huaweiFormat ? 'huaweiPair' : 'standard';
+      final mode = _huaweiFormat ? 'huawei' : 'standard';
       final result = await _plugin.export(
         imagePath: processed.path,
         videoPath: _videoPath!,
@@ -497,10 +509,12 @@ class _EditorPageState extends State<EditorPage> {
       );
 
       setState(() {
-        if (result != null && result['video'] != null) {
-          _status = '✅ 华为动态照片已导出\n图片: ${result['image']}\n视频: ${result['video']}';
-        } else if (result != null && result['motionPhoto'] != null) {
-          _status = '✅ 标准 MotionPhoto 已生成\n${result['motionPhoto']}';
+        final motionPhoto = result?['motionPhoto'];
+        if (motionPhoto != null) {
+          final kind = _huaweiFormat ? '华为动态照片' : '标准 MotionPhoto';
+          _status = '✅ $kind 已导出（单文件）\n$motionPhoto';
+        } else if (result?['image'] != null) {
+          _status = '✅ 已导出\n${result['image']}';
         } else {
           _status = '导出完成: $result';
         }
@@ -592,7 +606,7 @@ class _GlassBadge extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
