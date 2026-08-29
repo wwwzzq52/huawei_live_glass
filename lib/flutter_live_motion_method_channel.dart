@@ -37,4 +37,13 @@ class MethodChannelFlutterLiveMotion extends FlutterLiveMotionPlatform {
     });
     return result;
   }
+
+  /// 【新增：华为动态照片提取通道】
+  @override
+  Future<Map<dynamic, dynamic>?> extractVideo({required String imagePath}) async {
+    final result = await methodChannel.invokeMapMethod<dynamic, dynamic>('extractVideo', {
+      'imagePath': imagePath,
+    });
+    return result;
+  }
 }
