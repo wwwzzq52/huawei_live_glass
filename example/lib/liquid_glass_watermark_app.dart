@@ -514,7 +514,7 @@ class _EditorPageState extends State<EditorPage> {
           final kind = _huaweiFormat ? '华为动态照片' : '标准 MotionPhoto';
           _status = '✅ $kind 已导出（单文件）\n$motionPhoto';
         } else if (result?['image'] != null) {
-          _status = '✅ 已导出\n${result['image']}';
+          _status = '✅ 已导出\n${result!['image']}';
         } else {
           _status = '导出完成: $result';
         }
