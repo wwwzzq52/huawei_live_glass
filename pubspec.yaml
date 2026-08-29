@@ -12,7 +12,7 @@ issue_tracker: https://github.com/aiglance/flutter_live_motion/issues
 
 
 environment:
-  sdk: ^3.9.2
+  sdk: ^3.6.0
   flutter: '>=3.3.0'
 
 
