@@ -38,4 +38,15 @@ class FlutterLiveMotion {
       mode: mode,
     );
   }
+
+  /// 【新增：华为动态照片提取】
+  ///
+  /// 从选中的华为动态照片（单文件 .jpg）中提取内嵌视频片段。
+  ///
+  /// Android 返回 `Map`：
+  ///   `{ 'videoPath': 提取出的 MP4 缓存路径（失败为 null）,
+  ///      'isHuaweiMotionPhoto': 是否为华为动态照片 }`。
+  Future<Map<dynamic, dynamic>?> extractVideo({required String imagePath}) {
+    return FlutterLiveMotionPlatform.instance.extractVideo(imagePath: imagePath);
+  }
 }
