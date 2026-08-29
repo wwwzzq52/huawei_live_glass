@@ -66,3 +66,18 @@ Android 返回值：
 - `AndroidLiquidGlass` 参考：Apache License 2.0（副本见 `LICENSE-AndroidLiquidGlass-Apache2.0`）
 
 本扩展新增代码沿用上游 MIT License 发布。
+
+## 云编译 APK（GitHub Actions）
+
+仓库已内置工作流 `.github/workflows/build-apk.yml`，在 GitHub 网页上：
+
+1. 打开仓库 **Actions** 页；
+2. 左侧选择 **build-apk**；
+3. 点 **Run workflow** → 保持 `main` 分支 → **Run workflow**；
+4. 等待流水线跑完（约 5–10 分钟）；
+5. 进入该次运行，在 **Artifacts** 区下载 `huawei_live_glass-release-apk`，
+   解压得到 `app-release.apk` 即可安装。
+
+工作流使用 Flutter 3.35.2 + Java 17 构建，产物位于
+`example/build/app/outputs/flutter-apk/app-release.apk`。
+
