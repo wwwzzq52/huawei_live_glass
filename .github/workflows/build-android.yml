@@ -18,16 +18,20 @@ jobs:
       - name: Download Flutter 3.27.0
         run: git clone --depth 1 --branch 3.27.0 https://github.com/flutter/flutter.git ~/flutter
 
-      - name: Install dependencies（临时隐藏example文件夹，避免版本报错）
+      # 进入example示例App目录执行依赖下载
+      - name: Install dependencies
         run: |
-          mv example example_temp
+          cd example
           ~/flutter/bin/flutter pub get
 
+      # 在example里编译APK
       - name: Build Release APK
-        run: ~/flutter/bin/flutter build apk --release
+        run: |
+          cd example
+          ~/flutter/bin/flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: example/build/app/outputs/flutter-apk/app-release.apk
