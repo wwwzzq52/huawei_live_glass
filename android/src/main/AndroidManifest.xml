@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.cloudmind.flutter_live_motion">
+
+  <!--
+    【修改点 C：权限】
+    - API <= 32 写公共相册（华为配对模式导出到 DCIM/Camera）需要 WRITE_EXTERNAL_STORAGE
+    - API <= 32 读取用户相册中的同名 MP4 需要 READ_EXTERNAL_STORAGE
+    - API 33+ 由宿主 App 的 READ_MEDIA_IMAGES / READ_MEDIA_VIDEO 承担读取，
+      MediaStore 写 DCIM/Camera 无需任何权限。
+  -->
+  <uses-permission
+      android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+      android:maxSdkVersion="32" />
+  <uses-permission
+      android:name="android.permission.READ_EXTERNAL_STORAGE"
+      android:maxSdkVersion="32" />
+</manifest>
