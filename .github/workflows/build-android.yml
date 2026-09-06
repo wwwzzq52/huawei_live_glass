@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -17,16 +20,28 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Accept SDK licenses & install platform/build-tools
+      - name: Ensure Android SDK platform 37
         run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKM="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKM" ] || SDKM="$(command -v sdkmanager || true)"
+          echo "SDK root: $SDK_ROOT"
+          echo "sdkmanager: $SDKM"
+          ls "$SDK_ROOT/platforms" || true
+          if [ -n "$SDKM" ]; then
+            yes | "$SDKM" --sdk_root="$SDK_ROOT" --licenses >/dev/null 2>&1 || true
+            if ! ls "$SDK_ROOT/platforms" | grep -q "android-37"; then
+              yes | "$SDKM" --sdk_root="$SDK_ROOT" "platforms;android-37.0" "build-tools;37.0.0"
+            fi
+          else
+            echo "sdkmanager not found - relying on AGP auto-download"
+          fi
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Build release APK
-        run: ./gradlew :androidApp:assembleRelease --no-daemon
+        run: ./gradlew :androidApp:assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -34,15 +49,3 @@ jobs:
           name: liquid-glass-huawei-apk
           path: androidApp/build/outputs/apk/release/*.apk
           if-no-files-found: error
-
-      - name: Upload debug APK (fallback)
-        if: ${{ failure() }}
-        run: ./gradlew :androidApp:assembleDebug --no-daemon || true
-
-      - name: Upload debug APK artifact
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: liquid-glass-huawei-apk-debug
-          path: androidApp/build/outputs/apk/debug/*.apk
-          if-no-files-found: ignore
