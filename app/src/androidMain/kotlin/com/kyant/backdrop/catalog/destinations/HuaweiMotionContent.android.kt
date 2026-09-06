@@ -74,7 +74,7 @@ actual fun HuaweiMotionContent() {
             try {
                 val file = HuaweiMotionSaver.copyUriToCache(context, uri, "motion_input.jpg")
                 imagePath = file.absolutePath
-                imagePainter = rememberPainterFromFile(file)
+                imagePainter = decodePainter(file)
                 videoPath = null
                 isHuawei = null
                 status = "已选择图片：${file.name}"
@@ -258,14 +258,11 @@ actual fun HuaweiMotionContent() {
     }
 }
 
-@Composable
-private fun rememberPainterFromFile(file: java.io.File): Painter? {
-    return remember(file) {
-        runCatching {
-            android.graphics.BitmapFactory
-                .decodeFile(file.absolutePath)
-                ?.asImageBitmap()
-                ?.let { BitmapPainter(it) }
-        }.getOrNull()
-    }
+private fun decodePainter(file: java.io.File): Painter? {
+    return runCatching {
+        android.graphics.BitmapFactory
+            .decodeFile(file.absolutePath)
+            ?.asImageBitmap()
+            ?.let { BitmapPainter(it) }
+    }.getOrNull()
 }
