@@ -29,7 +29,7 @@ class HuaweiMotionSaver(private val context: Context) {
     )
 
     companion object {
-        private const val RELATIVE_DIR = Environment.DIRECTORY_DCIM + "/" + "Camera"
+        private const val RELATIVE_DIR = "DCIM/Camera"
 
         /**
          * 把 content:// Uri 拷贝到应用缓存目录，返回本地文件。
