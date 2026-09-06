@@ -41,8 +41,7 @@ class HuaweiMotionPhotoExporter private constructor(
 
     companion object {
 
-        private const val RELATIVE_DIR =
-            Environment.DIRECTORY_DCIM + "/" + "Camera"
+        private const val RELATIVE_DIR = "DCIM/Camera"
 
         fun export(
             context: Context,
